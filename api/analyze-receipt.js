@@ -1,6 +1,6 @@
 const OpenAI = require('openai');
 
-module.exports = async function handler(req: any, res: any) {
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -12,67 +12,48 @@ module.exports = async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'Base64 image is required' });
     }
 
-    // TODO: Replace with your OpenAI API key
     const openaiApiKey = process.env.OPENAI_API_KEY;
     
     if (!openaiApiKey) {
       return res.status(500).json({ error: 'OpenAI API key not configured' });
     }
 
-    const openai = new OpenAI({
-      apiKey: openaiApiKey,
-    });
+    const openai = new OpenAI({ apiKey: openaiApiKey });
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
+    const systemPrompt = `You are an assistant that extracts structured receipt data.
+Return ONLY valid minified JSON matching this schema:
+{
+  "items": [{"name": string, "price": number}],
+  "total": number,
+  "subtotal": number | null,
+  "tax": number | null,
+  "tip": number | null
+}
+Rules:
+- Prices are numbers in dollars
+- Include every line item you can read
+- If a field is missing on the receipt, use null`;
+
+    const response = await openai.responses.create({
+      model: 'gpt-4.1-mini',
+      input: [
         {
           role: 'user',
           content: [
-            {
-              type: 'text',
-              text: `Analyze this receipt image and extract all items with their prices. Return the data in the following JSON format:
-              {
-                "items": [
-                  {
-                    "name": "item name",
-                    "price": 0.00
-                  }
-                ],
-                "total": 0.00,
-                "subtotal": 0.00,
-                "tax": 0.00,
-                "tip": 0.00
-              }
-              
-              Make sure to:
-              1. Extract ALL items from the receipt
-              2. Include the exact price for each item
-              3. Calculate the total amount
-              4. If visible, include subtotal, tax, and tip separately
-              5. Return ONLY valid JSON, no other text`
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`
-              }
-            }
+            { type: 'input_text', text: systemPrompt },
+            { type: 'input_text', text: 'Analyze this receipt image and extract items and totals.' },
+            { type: 'input_image', image_url: `data:image/jpeg;base64,${base64Image}` }
           ]
         }
-      ],
-      max_tokens: 1000,
-      temperature: 0.1
+      ]
     });
 
-    const content = response.choices[0]?.message?.content;
-
-    if (!content) {
-      throw new Error('No content received from OpenAI');
+    const outputText = response.output_text;
+    if (!outputText) {
+      throw new Error('No text output received from OpenAI');
     }
 
-    // Parse the JSON response
-    const receiptData = JSON.parse(content);
+    const receiptData = JSON.parse(outputText);
 
     res.status(200).json(receiptData);
   } catch (error) {
