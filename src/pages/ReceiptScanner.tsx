@@ -454,6 +454,22 @@ export const ReceiptScanner: React.FC = () => {
                 </div>
               </div>
 
+              {analysis && Math.abs((analysis.total || 0) - itemsTotal) > 0.10 && (
+                <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
+                  <div className="flex items-start">
+                    <div className="text-yellow-600 mr-2">⚠️</div>
+                    <div className="text-sm">
+                      <p className="font-medium text-yellow-800 mb-1">Scanning discrepancy detected</p>
+                      <p className="text-yellow-700">
+                        AI detected ${(analysis.total || 0).toFixed(2)} but items add up to ${itemsTotal.toFixed(2)}. 
+                        This could mean some items weren't scanned properly or prices need adjustment. 
+                        Please double-check the item list above.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <button
                 onClick={() => setStep('confirm')}
                 className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-primary-700 flex items-center justify-center"
@@ -489,7 +505,7 @@ export const ReceiptScanner: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span>Total amount:</span>
-                    <span className="font-medium">${analysis?.total.toFixed(2)}</span>
+                    <span className="font-medium">${itemsTotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Yuen Ler owes:</span>

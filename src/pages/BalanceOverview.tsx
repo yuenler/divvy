@@ -112,7 +112,7 @@ export const BalanceOverview: React.FC = () => {
     );
   }
 
-  const netBalance = balance.yuenLerOwes - balance.haomingOwes;
+  const netBalance = balance.haomingOwes - balance.yuenLerOwes;
   const isBalanced = Math.abs(netBalance) < 0.01;
 
   return (
