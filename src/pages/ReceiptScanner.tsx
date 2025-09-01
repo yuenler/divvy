@@ -13,6 +13,8 @@ export const ReceiptScanner: React.FC = () => {
   const [submittedBy, setSubmittedBy] = useState<'Yuen Ler' | 'Haoming'>('Yuen Ler');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'upload' | 'analyze' | 'split' | 'confirm'>('upload');
+  const [tax, setTax] = useState<number>(0);
+  const [tip, setTip] = useState<number>(0);
 
   useEffect(() => {
     const savedSubmitter = localStorage.getItem('expenseSubmitter');
@@ -125,6 +127,8 @@ export const ReceiptScanner: React.FC = () => {
       const receiptData: ReceiptAnalysis = await response.json();
       setAnalysis(receiptData);
       setStore(receiptData.store || '');
+      setTax(receiptData.tax || 0);
+      setTip(receiptData.tip || 0);
       
       // Initialize items with AI suggestions
       const initialItems: ExpenseItem[] = receiptData.items.map(item => ({
@@ -156,6 +160,30 @@ export const ReceiptScanner: React.FC = () => {
     setItems(updatedItems);
   };
 
+  const calculateProportionalTaxAndTip = () => {
+    const itemsTotal = items.reduce((sum, item) => sum + item.price, 0);
+    if (itemsTotal === 0) return { yuenLerTaxTip: 0, haomingTaxTip: 0 };
+    
+    const other = submittedBy === 'Yuen Ler' ? 'Haoming' : 'Yuen Ler';
+    let otherItemTotal = 0;
+    
+    items.forEach(item => {
+      if (item.assignedTo === 'Split') {
+        otherItemTotal += item.price / 2;
+      } else if (item.assignedTo === other) {
+        otherItemTotal += item.price;
+      }
+    });
+    
+    const otherProportion = otherItemTotal / itemsTotal;
+    const totalTaxTip = tax + tip;
+    
+    return {
+      yuenLerTaxTip: other === 'Yuen Ler' ? totalTaxTip * otherProportion : totalTaxTip * (1 - otherProportion),
+      haomingTaxTip: other === 'Haoming' ? totalTaxTip * otherProportion : totalTaxTip * (1 - otherProportion),
+    };
+  };
+
   const calculateBalances = () => {
     const other = submittedBy === 'Yuen Ler' ? 'Haoming' : 'Yuen Ler';
     let otherOwes = 0;
@@ -166,9 +194,12 @@ export const ReceiptScanner: React.FC = () => {
         otherOwes += item.price;
       }
     });
+    
+    const taxTipSplit = calculateProportionalTaxAndTip();
+    
     return {
-      yuenLerTotal: other === 'Yuen Ler' ? otherOwes : 0,
-      haomingTotal: other === 'Haoming' ? otherOwes : 0,
+      yuenLerTotal: (other === 'Yuen Ler' ? otherOwes : 0) + taxTipSplit.yuenLerTaxTip,
+      haomingTotal: (other === 'Haoming' ? otherOwes : 0) + taxTipSplit.haomingTaxTip,
     };
   };
 
@@ -194,10 +225,11 @@ export const ReceiptScanner: React.FC = () => {
     setLoading(true);
     try {
       const itemsTotal = items.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
+      const totalAmount = itemsTotal + tax + tip;
 
       await addExpense({
         timestamp: new Date(),
-        totalAmount: itemsTotal,
+        totalAmount,
         items,
         customNotes,
         submittedBy,
@@ -210,6 +242,8 @@ export const ReceiptScanner: React.FC = () => {
       setAnalysis(null);
       setItems([]);
       setCustomNotes('');
+      setTax(0);
+      setTip(0);
       setStep('upload');
       
       alert('Expense added successfully!');
@@ -223,6 +257,7 @@ export const ReceiptScanner: React.FC = () => {
 
   const balances = calculateBalances();
   const itemsTotal = items.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
+  const totalWithTaxTip = itemsTotal + tax + tip;
 
   return (
     <div className="max-w-md mx-auto p-4">
@@ -336,6 +371,8 @@ export const ReceiptScanner: React.FC = () => {
                   }]);
                   setStore('');
                   setCustomNotes('');
+                  setTax(0);
+                  setTip(0);
                   setStep('split');
                 }}
                 className="w-full mt-2 bg-gray-100 text-gray-800 py-3 px-4 rounded-lg font-medium hover:bg-gray-200"
@@ -375,6 +412,33 @@ export const ReceiptScanner: React.FC = () => {
                   placeholder="e.g., Costco"
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Tax</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    value={tax}
+                    onChange={(e) => setTax(parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Tip</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    value={tip}
+                    onChange={(e) => setTip(parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    placeholder="0.00"
+                  />
+                </div>
               </div>
 
               {items.map((item, index) => (
@@ -447,6 +511,26 @@ export const ReceiptScanner: React.FC = () => {
                 <h3 className="font-semibold text-gray-900 mb-2">Summary</h3>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
+                    <span>Items subtotal:</span>
+                    <span>${itemsTotal.toFixed(2)}</span>
+                  </div>
+                  {tax > 0 && (
+                    <div className="flex justify-between">
+                      <span>Tax:</span>
+                      <span>${tax.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {tip > 0 && (
+                    <div className="flex justify-between">
+                      <span>Tip:</span>
+                      <span>${tip.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between border-t pt-1">
+                    <span>Total:</span>
+                    <span className="font-semibold">${totalWithTaxTip.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-1">
                     <span>Yuen Ler owes:</span>
                     <span className="font-medium">${balances.yuenLerTotal.toFixed(2)}</span>
                   </div>
@@ -454,24 +538,38 @@ export const ReceiptScanner: React.FC = () => {
                     <span>Haoming owes:</span>
                     <span className="font-medium">${balances.haomingTotal.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between border-t pt-1 font-semibold">
-                    <span>Total:</span>
-                    <span>${itemsTotal.toFixed(2)}</span>
-                  </div>
                 </div>
               </div>
 
-              {analysis && Math.abs((analysis.total || 0) - itemsTotal) > 0.10 && (
+              {analysis && Math.abs((analysis.total || 0) - totalWithTaxTip) > 0.10 && (
                 <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
                   <div className="flex items-start">
                     <div className="text-yellow-600 mr-2">⚠️</div>
-                    <div className="text-sm">
+                    <div className="text-sm flex-1">
                       <p className="font-medium text-yellow-800 mb-1">Scanning discrepancy detected</p>
-                      <p className="text-yellow-700">
-                        AI detected ${(analysis.total || 0).toFixed(2)} but items add up to ${itemsTotal.toFixed(2)}. 
-                        This could mean some items weren't scanned properly or prices need adjustment. 
+                      <p className="text-yellow-700 mb-3">
+                        AI detected ${(analysis.total || 0).toFixed(2)} but total with tax/tip is ${totalWithTaxTip.toFixed(2)}. 
+                        This could mean some items weren't scanned properly, prices need adjustment, or the AI didn't detect an additional fee/tax/credit.
                         Please double-check the item list above.
                       </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const discrepancy = (analysis.total || 0) - totalWithTaxTip;
+                          setItems(prev => [
+                            ...prev,
+                            { 
+                              rawName: 'Unknown Fee', 
+                              displayName: discrepancy > 0 ? 'Additional Fee' : 'Credit/Discount', 
+                              price: Math.abs(discrepancy), 
+                              assignedTo: 'Split' 
+                            }
+                          ]);
+                        }}
+                        className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded text-xs font-medium hover:bg-yellow-200 transition-colors"
+                      >
+                        Add Unknown Fee (${Math.abs((analysis.total || 0) - totalWithTaxTip).toFixed(2)})
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -512,7 +610,7 @@ export const ReceiptScanner: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span>Total amount:</span>
-                    <span className="font-medium">${itemsTotal.toFixed(2)}</span>
+                    <span className="font-medium">${totalWithTaxTip.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Yuen Ler owes:</span>
