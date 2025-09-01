@@ -82,7 +82,6 @@ export const ReceiptScanner: React.FC = () => {
   };
 
   const calculateBalances = () => {
-    const payer = submittedBy;
     const other = submittedBy === 'Yuen Ler' ? 'Haoming' : 'Yuen Ler';
     let otherOwes = 0;
     items.forEach(item => {
@@ -98,14 +97,34 @@ export const ReceiptScanner: React.FC = () => {
     };
   };
 
+  const addItem = () => {
+    setItems(prev => [
+      ...prev,
+      { rawName: '', displayName: '', price: 0, assignedTo: 'Split' }
+    ]);
+  };
+
+  const removeItem = (index: number) => {
+    setItems(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateItemPrice = (index: number, priceString: string) => {
+    const price = parseFloat(priceString || '0');
+    const updatedItems = [...items];
+    updatedItems[index].price = isNaN(price) ? 0 : Math.max(0, price);
+    setItems(updatedItems);
+  };
+
   const submitExpense = async () => {
     if (!analysis) return;
 
     setLoading(true);
     try {
+      const itemsTotal = items.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
+
       await addExpense({
         timestamp: new Date(),
-        totalAmount: analysis.total,
+        totalAmount: itemsTotal,
         items,
         customNotes,
         submittedBy,
@@ -130,9 +149,10 @@ export const ReceiptScanner: React.FC = () => {
   };
 
   const balances = calculateBalances();
+  const itemsTotal = items.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
 
   return (
-    <div className="max-w-md mx-auto p-4">
+    <div className="max-w-md mx-auto p-4 overflow-x-hidden">
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-6 text-center">
           Scan Receipt
@@ -230,6 +250,18 @@ export const ReceiptScanner: React.FC = () => {
                   </>
                 )}
               </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setAnalysis(null);
+                  setItems([{ rawName: '', displayName: '', price: 0, assignedTo: 'Split' }]);
+                  setStep('split');
+                }}
+                className="w-full mt-2 bg-gray-100 text-gray-800 py-3 px-4 rounded-lg font-medium hover:bg-gray-200"
+              >
+                Enter Manually Instead
+              </button>
             </div>
           </div>
         )}
@@ -243,6 +275,15 @@ export const ReceiptScanner: React.FC = () => {
               <p className="text-gray-600 text-sm">
                 Assign items to who should pay for them
               </p>
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={() => setStep('upload')}
+                  className="text-sm text-primary-600 hover:text-primary-700 underline"
+                >
+                  Rescan receipt
+                </button>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -264,7 +305,14 @@ export const ReceiptScanner: React.FC = () => {
                       onChange={(e) => updateItemName(index, e.target.value)}
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
                     />
-                    <span className="text-sm text-gray-600">${item.price.toFixed(2)}</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      value={String(item.price)}
+                      onChange={(e) => updateItemPrice(index, e.target.value)}
+                      className="w-24 px-2 py-2 border border-gray-300 rounded-md text-sm text-right"
+                    />
                     <select
                       value={item.assignedTo}
                       onChange={(e) => updateItemAssignment(index, e.target.value as 'Yuen Ler' | 'Haoming' | 'Split')}
@@ -274,10 +322,25 @@ export const ReceiptScanner: React.FC = () => {
                       <option value="Haoming">Haoming</option>
                       <option value="Split">Split</option>
                     </select>
+                    <button
+                      type="button"
+                      onClick={() => removeItem(index)}
+                      className="text-xs text-red-600 hover:text-red-700"
+                    >
+                      Remove
+                    </button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Raw: {item.rawName}</p>
+                  <p className="text-xs text-gray-500 mt-1 break-words">Raw: {item.rawName}</p>
                 </div>
               ))}
+
+              <button
+                type="button"
+                onClick={addItem}
+                className="w-full bg-gray-100 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-200"
+              >
+                Add Item
+              </button>
 
               <div className="border-t pt-4">
                 <label className="block mb-2">
@@ -307,7 +370,7 @@ export const ReceiptScanner: React.FC = () => {
                   </div>
                   <div className="flex justify-between border-t pt-1 font-semibold">
                     <span>Total:</span>
-                    <span>${analysis.total.toFixed(2)}</span>
+                    <span>${itemsTotal.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
