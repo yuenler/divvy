@@ -1,46 +1,111 @@
-# Getting Started with Create React App
+# Expense Sharing App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A beautiful, mobile-first expense sharing app for roommates built with React, TypeScript, Tailwind CSS, Firebase, and OpenAI.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- 📸 **Receipt Scanning**: Upload receipt photos and get AI-powered itemization
+- 💰 **Smart Splitting**: Assign items to specific people or split evenly
+- 📊 **Balance Tracking**: Real-time balance calculation between roommates
+- 💳 **Payment Integration**: Venmo and Zelle integration for easy payments
+- 📱 **Mobile-First Design**: Optimized for mobile use with responsive design
+- 📜 **History Tracking**: View all past receipts and payment history
 
-### `npm start`
+## Tech Stack
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+- **Frontend**: React 19 + TypeScript + Tailwind CSS
+- **Backend**: Vercel Serverless Functions
+- **Database**: Firebase Firestore
+- **Storage**: Firebase Storage
+- **AI**: OpenAI GPT-4 Vision for receipt analysis
+- **Icons**: Lucide React
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## Setup Instructions
 
-### `npm test`
+### 1. Install Dependencies
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```bash
+npm install
+```
 
-### `npm run build`
+### 2. Firebase Setup
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+1. Create a new Firebase project at [Firebase Console](https://console.firebase.google.com/)
+2. Enable Firestore Database and Storage
+3. Copy your Firebase config and update `src/firebase/config.ts`
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 3. Environment Variables
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Create a `.env.local` file in the root directory:
 
-### `npm run eject`
+```env
+# Firebase Configuration
+REACT_APP_FIREBASE_API_KEY=your-api-key-here
+REACT_APP_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=your-project-id
+REACT_APP_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=123456789
+REACT_APP_FIREBASE_APP_ID=your-app-id
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+# OpenAI Configuration (for Vercel deployment)
+OPENAI_API_KEY=your-openai-api-key-here
+```
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### 4. OpenAI Setup
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+1. Get an OpenAI API key from [OpenAI Platform](https://platform.openai.com/)
+2. Add it to your environment variables
+3. The API endpoint is configured to use GPT-4 Vision for receipt analysis
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+### 5. Run Development Server
 
-## Learn More
+```bash
+npm start
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Open [http://localhost:3000](http://localhost:3000) to view the app.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Deployment
+
+### Vercel Deployment
+
+1. Push your code to GitHub
+2. Connect your repository to Vercel
+3. Add environment variables in Vercel dashboard
+4. Deploy!
+
+The app includes Vercel serverless functions for OpenAI integration.
+
+## Usage
+
+1. **Scan Receipt**: Take a photo of your receipt and let AI extract the items
+2. **Split Expenses**: Assign items to yourself, your roommate, or split evenly
+3. **View Balance**: See who owes what and settle up easily
+4. **Track History**: View all past receipts and payments
+
+## Customization
+
+The app is hardcoded for two roommates: "Yuen Ler" and "Haoming". To customize:
+
+1. Update the types in `src/types/index.ts`
+2. Update the UI components to use your names
+3. Update the balance calculation logic if needed
+
+## Project Structure
+
+```
+src/
+├── components/          # Reusable UI components
+├── firebase/           # Firebase configuration and services
+├── pages/              # Main app pages
+├── types/              # TypeScript type definitions
+├── utils/              # Utility functions
+└── App.tsx             # Main app component
+
+api/                    # Vercel serverless functions
+├── analyze-receipt.ts  # OpenAI receipt analysis endpoint
+```
+
+## Contributing
+
+This is a personal expense sharing app, but feel free to fork and customize for your own use!
