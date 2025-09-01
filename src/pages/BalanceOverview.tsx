@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DollarSign, CreditCard, Smartphone, CheckCircle } from 'lucide-react';
 import { Expense, Payment, Balance } from '../types';
 import { getExpenses, getPayments, addPayment } from '../firebase/services';
+import { calculateBalance as calcUtil } from '../utils/balanceCalculator';
 
 export const BalanceOverview: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -31,38 +32,8 @@ export const BalanceOverview: React.FC = () => {
   };
 
   const calculateBalance = (expensesData: Expense[], paymentsData: Payment[]) => {
-    let yuenLerTotal = 0;
-    let haomingTotal = 0;
-
-    // Calculate from expenses
-    expensesData.forEach(expense => {
-      expense.items.forEach(item => {
-        const amount = item.assignedTo === 'Both' ? item.price / 2 : item.price;
-        
-        if (item.assignedTo === 'Yuen Ler' || item.assignedTo === 'Both') {
-          yuenLerTotal += amount;
-        }
-        if (item.assignedTo === 'Haoming' || item.assignedTo === 'Both') {
-          haomingTotal += amount;
-        }
-      });
-    });
-
-    // Subtract payments
-    paymentsData.forEach(payment => {
-      if (payment.from === 'Yuen Ler' && payment.to === 'Haoming') {
-        yuenLerTotal -= payment.amount;
-        haomingTotal += payment.amount;
-      } else if (payment.from === 'Haoming' && payment.to === 'Yuen Ler') {
-        haomingTotal -= payment.amount;
-        yuenLerTotal += payment.amount;
-      }
-    });
-
-    setBalance({
-      yuenLerOwes: Math.max(0, yuenLerTotal - haomingTotal),
-      haomingOwes: Math.max(0, haomingTotal - yuenLerTotal)
-    });
+    const b = calcUtil(expensesData, paymentsData);
+    setBalance(b);
   };
 
   const handlePayment = async (method: 'venmo' | 'zelle' | 'manual', amount: number, from: 'Yuen Ler' | 'Haoming', to: 'Yuen Ler' | 'Haoming') => {

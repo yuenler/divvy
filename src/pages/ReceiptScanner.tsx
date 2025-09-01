@@ -9,6 +9,7 @@ export const ReceiptScanner: React.FC = () => {
   const [analysis, setAnalysis] = useState<ReceiptAnalysis | null>(null);
   const [items, setItems] = useState<ExpenseItem[]>([]);
   const [customNotes, setCustomNotes] = useState('');
+  const [store, setStore] = useState<string>('');
   const [submittedBy, setSubmittedBy] = useState<'Yuen Ler' | 'Haoming'>('Yuen Ler');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'upload' | 'analyze' | 'split' | 'confirm'>('upload');
@@ -39,7 +40,7 @@ export const ReceiptScanner: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ base64Image }),
+        body: JSON.stringify({ base64Image, payerName: submittedBy, notes: customNotes }),
       });
 
       if (!response.ok) {
@@ -48,11 +49,15 @@ export const ReceiptScanner: React.FC = () => {
 
       const receiptData: ReceiptAnalysis = await response.json();
       setAnalysis(receiptData);
+      setStore(receiptData.store || '');
       
-      // Initialize items with default assignment
+      // Initialize items with AI suggestions
       const initialItems: ExpenseItem[] = receiptData.items.map(item => ({
-        ...item,
-        assignedTo: 'Both'
+        rawName: item.rawName,
+        displayName: item.displayName,
+        price: item.price,
+        assignedTo: (item.suggestedAssignee as any) || 'Split',
+        suggestedAssignee: (item.suggestedAssignee as any) || 'Split'
       }));
       setItems(initialItems);
       setStep('split');
@@ -64,22 +69,33 @@ export const ReceiptScanner: React.FC = () => {
     }
   };
 
-  const updateItemAssignment = (index: number, assignedTo: 'Yuen Ler' | 'Haoming' | 'Both') => {
+  const updateItemAssignment = (index: number, assignedTo: 'Yuen Ler' | 'Haoming' | 'Split') => {
     const updatedItems = [...items];
     updatedItems[index].assignedTo = assignedTo;
     setItems(updatedItems);
   };
 
-  const calculateBalances = () => {
-    const yuenLerTotal = items
-      .filter(item => item.assignedTo === 'Yuen Ler' || item.assignedTo === 'Both')
-      .reduce((sum, item) => sum + (item.assignedTo === 'Both' ? item.price / 2 : item.price), 0);
-    
-    const haomingTotal = items
-      .filter(item => item.assignedTo === 'Haoming' || item.assignedTo === 'Both')
-      .reduce((sum, item) => sum + (item.assignedTo === 'Both' ? item.price / 2 : item.price), 0);
+  const updateItemName = (index: number, displayName: string) => {
+    const updatedItems = [...items];
+    updatedItems[index].displayName = displayName;
+    setItems(updatedItems);
+  };
 
-    return { yuenLerTotal, haomingTotal };
+  const calculateBalances = () => {
+    const payer = submittedBy;
+    const other = submittedBy === 'Yuen Ler' ? 'Haoming' : 'Yuen Ler';
+    let otherOwes = 0;
+    items.forEach(item => {
+      if (item.assignedTo === 'Split') {
+        otherOwes += item.price / 2;
+      } else if (item.assignedTo === other) {
+        otherOwes += item.price;
+      }
+    });
+    return {
+      yuenLerTotal: other === 'Yuen Ler' ? otherOwes : 0,
+      haomingTotal: other === 'Haoming' ? otherOwes : 0,
+    };
   };
 
   const submitExpense = async () => {
@@ -93,6 +109,7 @@ export const ReceiptScanner: React.FC = () => {
         items,
         customNotes,
         submittedBy,
+        store,
       });
 
       // Reset form
@@ -188,6 +205,17 @@ export const ReceiptScanner: React.FC = () => {
                 </div>
               )}
 
+              <label className="block">
+                <span className="text-sm font-medium text-gray-700 mb-2 block">Notes (optional)</span>
+                <textarea
+                  value={customNotes}
+                  onChange={(e) => setCustomNotes(e.target.value)}
+                  placeholder="e.g., 'Milk was only for me' or 'Cheese was for Haoming'"
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+                  rows={3}
+                />
+              </label>
+
               <button
                 onClick={analyzeReceipt}
                 disabled={!selectedFile || loading}
@@ -218,21 +246,36 @@ export const ReceiptScanner: React.FC = () => {
             </div>
 
             <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Store</span>
+                <input
+                  value={store}
+                  onChange={(e) => setStore(e.target.value)}
+                  placeholder="e.g., Costco"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                />
+              </div>
+
               {items.map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">{item.name}</p>
-                    <p className="text-sm text-gray-600">${item.price.toFixed(2)}</p>
+                <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <input
+                      value={item.displayName}
+                      onChange={(e) => updateItemName(index, e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    />
+                    <span className="text-sm text-gray-600">${item.price.toFixed(2)}</span>
+                    <select
+                      value={item.assignedTo}
+                      onChange={(e) => updateItemAssignment(index, e.target.value as 'Yuen Ler' | 'Haoming' | 'Split')}
+                      className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value="Yuen Ler">Yuen Ler</option>
+                      <option value="Haoming">Haoming</option>
+                      <option value="Split">Split</option>
+                    </select>
                   </div>
-                  <select
-                    value={item.assignedTo}
-                    onChange={(e) => updateItemAssignment(index, e.target.value as 'Yuen Ler' | 'Haoming' | 'Both')}
-                    className="ml-3 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="Yuen Ler">Yuen Ler</option>
-                    <option value="Haoming">Haoming</option>
-                    <option value="Both">Split</option>
-                  </select>
+                  <p className="text-xs text-gray-500 mt-1">Raw: {item.rawName}</p>
                 </div>
               ))}
 

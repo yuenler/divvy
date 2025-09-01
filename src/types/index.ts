@@ -1,7 +1,9 @@
 export interface ExpenseItem {
-  name: string;
+  rawName: string; // exact text from receipt
+  displayName: string; // human readable name, editable
   price: number;
-  assignedTo: 'Yuen Ler' | 'Haoming' | 'Both';
+  assignedTo: 'Yuen Ler' | 'Haoming' | 'Split';
+  suggestedAssignee?: 'Yuen Ler' | 'Haoming' | 'Split';
 }
 
 export interface Expense {
@@ -11,6 +13,7 @@ export interface Expense {
   items: ExpenseItem[];
   customNotes: string;
   submittedBy: 'Yuen Ler' | 'Haoming';
+  store?: string; // e.g., Costco, Trader Joe's
 }
 
 export interface Payment {
@@ -30,11 +33,14 @@ export interface Balance {
 
 export interface ReceiptAnalysis {
   items: Array<{
-    name: string;
+    rawName: string;
+    displayName: string;
     price: number;
+    suggestedAssignee?: 'Yuen Ler' | 'Haoming' | 'Split';
   }>;
   total: number;
   subtotal?: number;
   tax?: number;
   tip?: number;
+  store?: string;
 }
