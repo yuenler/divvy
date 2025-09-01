@@ -36,7 +36,23 @@ export const BalanceOverview: React.FC = () => {
     setBalance(b);
   };
 
-  const handlePayment = async (method: 'venmo' | 'zelle' | 'manual', amount: number, from: 'Yuen Ler' | 'Haoming', to: 'Yuen Ler' | 'Haoming') => {
+  const getDateSpanNote = () => {
+    if (expenses.length === 0) return 'Divvy settlement';
+    
+    const sortedExpenses = [...expenses].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    const oldestDate = sortedExpenses[0].timestamp;
+    const newestDate = sortedExpenses[sortedExpenses.length - 1].timestamp;
+    
+    const formatDate = (date: Date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    
+    if (oldestDate.toDateString() === newestDate.toDateString()) {
+      return `Divvy settlement (${formatDate(oldestDate)})`;
+    }
+    
+    return `Divvy settlement (${formatDate(oldestDate)} - ${formatDate(newestDate)})`;
+  };
+
+  const handlePayment = async (method: 'venmo' | 'zelle', amount: number, from: 'Yuen Ler' | 'Haoming', to: 'Yuen Ler' | 'Haoming') => {
     try {
       await addPayment({
         timestamp: new Date(),
@@ -44,15 +60,16 @@ export const BalanceOverview: React.FC = () => {
         from,
         to,
         method,
-        relatedExpenses: [] // TODO: Link to specific expenses
+        relatedExpenses: expenses.map(e => e.id)
       });
 
       // Reload data to update balance
       await loadData();
       
       if (method === 'venmo') {
-        // Open Venmo app
-        const venmoUrl = `venmo://paycharge?txn=pay&recipients=${to === 'Yuen Ler' ? 'yuenler' : 'haoming'}&amount=${amount}&note=Expense%20sharing%20payment`;
+        const venmoUsername = to === 'Yuen Ler' ? 'yuenler' : 'haoming';
+        const note = encodeURIComponent(getDateSpanNote());
+        const venmoUrl = `venmo://paycharge?txn=charge&recipients=${venmoUsername}&amount=${amount}&note=${note}`;
         window.open(venmoUrl, '_blank');
       }
       
@@ -134,16 +151,16 @@ export const BalanceOverview: React.FC = () => {
             <div className="space-y-4">
               <h3 className="font-semibold text-gray-900 text-center">Settle Up</h3>
               
-              <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-3">
                 <button
                   onClick={() => handlePayment('venmo', Math.abs(netBalance), 
                     netBalance > 0 ? 'Haoming' : 'Yuen Ler',
                     netBalance > 0 ? 'Yuen Ler' : 'Haoming'
                   )}
-                  className="flex flex-col items-center p-4 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+                  className="w-full flex items-center justify-center p-4 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
                 >
-                  <Smartphone className="w-6 h-6 text-green-600 mb-2" />
-                  <span className="text-sm font-medium text-green-800">Venmo</span>
+                  <Smartphone className="w-5 h-5 text-green-600 mr-2" />
+                  <span className="text-sm font-medium text-green-800">Pay with Venmo</span>
                 </button>
                 
                 <button
@@ -151,23 +168,12 @@ export const BalanceOverview: React.FC = () => {
                     netBalance > 0 ? 'Haoming' : 'Yuen Ler',
                     netBalance > 0 ? 'Yuen Ler' : 'Haoming'
                   )}
-                  className="flex flex-col items-center p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                  className="w-full flex items-center justify-center p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
                 >
-                  <CreditCard className="w-6 h-6 text-blue-600 mb-2" />
-                  <span className="text-sm font-medium text-blue-800">Zelle</span>
+                  <CreditCard className="w-5 h-5 text-blue-600 mr-2" />
+                  <span className="text-sm font-medium text-blue-800">Settle Manually with Zelle</span>
                 </button>
               </div>
-              
-              <button
-                onClick={() => handlePayment('manual', Math.abs(netBalance),
-                  netBalance > 0 ? 'Haoming' : 'Yuen Ler',
-                  netBalance > 0 ? 'Yuen Ler' : 'Haoming'
-                )}
-                className="w-full flex items-center justify-center p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <CheckCircle className="w-5 h-5 text-gray-600 mr-2" />
-                <span className="text-sm font-medium text-gray-800">Mark as Paid (Manual)</span>
-              </button>
             </div>
           )}
 

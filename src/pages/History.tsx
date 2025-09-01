@@ -90,7 +90,7 @@ export const History: React.FC = () => {
   ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   return (
-    <div className="max-w-md mx-auto p-4 overflow-x-hidden">
+    <div className="max-w-md mx-auto p-4">
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-6 text-center">
           History

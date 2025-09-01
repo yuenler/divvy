@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Camera, Upload, X, Check, DollarSign } from 'lucide-react';
 import { ReceiptAnalysis, ExpenseItem } from '../types';
 import { fileToBase64, addExpense } from '../firebase/services';
@@ -13,6 +13,18 @@ export const ReceiptScanner: React.FC = () => {
   const [submittedBy, setSubmittedBy] = useState<'Yuen Ler' | 'Haoming'>('Yuen Ler');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'upload' | 'analyze' | 'split' | 'confirm'>('upload');
+
+  useEffect(() => {
+    const savedSubmitter = localStorage.getItem('expenseSubmitter');
+    if (savedSubmitter === 'Yuen Ler' || savedSubmitter === 'Haoming') {
+      setSubmittedBy(savedSubmitter);
+    }
+  }, []);
+
+  const handleSubmitterChange = (value: 'Yuen Ler' | 'Haoming') => {
+    setSubmittedBy(value);
+    localStorage.setItem('expenseSubmitter', value);
+  };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -152,7 +164,7 @@ export const ReceiptScanner: React.FC = () => {
   const itemsTotal = items.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
 
   return (
-    <div className="max-w-md mx-auto p-4 overflow-x-hidden">
+    <div className="max-w-md mx-auto p-4">
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-6 text-center">
           Scan Receipt
@@ -179,7 +191,7 @@ export const ReceiptScanner: React.FC = () => {
                 </span>
                 <select
                   value={submittedBy}
-                  onChange={(e) => setSubmittedBy(e.target.value as 'Yuen Ler' | 'Haoming')}
+                  onChange={(e) => handleSubmitterChange(e.target.value as 'Yuen Ler' | 'Haoming')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="Yuen Ler">Yuen Ler</option>
@@ -330,7 +342,7 @@ export const ReceiptScanner: React.FC = () => {
                       Remove
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1 break-words">Raw: {item.rawName}</p>
+                  <p className="text-xs text-gray-500 mt-1 whitespace-pre-wrap break-words">Raw: {item.rawName}</p>
                 </div>
               ))}
 
