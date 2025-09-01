@@ -34,7 +34,7 @@ export const ReceiptScanner: React.FC = () => {
       
       img.onload = () => {
         // Calculate new dimensions (max 800px width/height)
-        const maxSize = 800;
+        const maxSize = 2000;
         let { width, height } = img;
         
         if (width > height) {
