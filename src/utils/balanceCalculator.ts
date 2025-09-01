@@ -8,23 +8,13 @@ export const calculateBalance = (expenses: Expense[], payments: Payment[]): Bala
   expenses.forEach(expense => {
     const payer = expense.submittedBy;
     
-    expense.items.forEach(item => {
-      if (item.assignedTo === 'Split') {
-        // Split items: other person owes half
-        if (payer === 'Yuen Ler') {
-          haomingOwesYuenLer += item.price / 2;
-        } else {
-          yuenLerOwesHaoming += item.price / 2;
-        }
-      } else if (item.assignedTo === 'Yuen Ler' && payer === 'Haoming') {
-        // Haoming paid for Yuen Ler's item
-        yuenLerOwesHaoming += item.price;
-      } else if (item.assignedTo === 'Haoming' && payer === 'Yuen Ler') {
-        // Yuen Ler paid for Haoming's item
-        haomingOwesYuenLer += item.price;
-      }
-      // If assignedTo === payer, they paid for their own item, no debt created
-    });
+    if (payer === 'Yuen Ler') {
+      // Yuen Ler paid, so Haoming owes him
+      haomingOwesYuenLer += expense.otherPersonOwes;
+    } else {
+      // Haoming paid, so Yuen Ler owes him
+      yuenLerOwesHaoming += expense.otherPersonOwes;
+    }
   });
 
   // Apply payments to reduce debt

@@ -160,28 +160,33 @@ export const ReceiptScanner: React.FC = () => {
     setItems(updatedItems);
   };
 
-  const calculateBalances = () => {
+  const calculateOtherPersonOwes = () => {
     const other = submittedBy === 'Yuen Ler' ? 'Haoming' : 'Yuen Ler';
-    let otherOwes = 0;
+    let otherOwesForItems = 0;
     items.forEach(item => {
       if (item.assignedTo === 'Split') {
-        otherOwes += item.price / 2;
+        otherOwesForItems += item.price / 2;
       } else if (item.assignedTo === other) {
-        otherOwes += item.price;
+        otherOwesForItems += item.price;
       }
     });
     
     // Calculate proportional tax and tip for the other person
     const itemsTotal = items.reduce((sum, item) => sum + item.price, 0);
     let otherTaxTip = 0;
-    if (itemsTotal > 0) {
-      const otherProportion = otherOwes / itemsTotal;
+    if (itemsTotal > 0 && (tax + tip) > 0) {
+      const otherProportion = otherOwesForItems / itemsTotal;
       otherTaxTip = (tax + tip) * otherProportion;
     }
     
+    return otherOwesForItems + otherTaxTip;
+  };
+
+  const calculateBalances = () => {
+    const otherPersonOwes = calculateOtherPersonOwes();
     return {
-      yuenLerTotal: other === 'Yuen Ler' ? otherOwes + otherTaxTip : 0,
-      haomingTotal: other === 'Haoming' ? otherOwes + otherTaxTip : 0,
+      yuenLerTotal: submittedBy === 'Haoming' ? otherPersonOwes : 0,
+      haomingTotal: submittedBy === 'Yuen Ler' ? otherPersonOwes : 0,
     };
   };
 
@@ -209,6 +214,9 @@ export const ReceiptScanner: React.FC = () => {
       const itemsTotal = items.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
       const totalAmount = itemsTotal + tax + tip;
 
+      // Calculate how much the other person owes (items + proportional tax/tip)
+      const otherPersonOwes = calculateOtherPersonOwes();
+
       await addExpense({
         timestamp: new Date(),
         totalAmount,
@@ -216,6 +224,9 @@ export const ReceiptScanner: React.FC = () => {
         customNotes,
         submittedBy,
         store,
+        tax,
+        tip,
+        otherPersonOwes,
       });
 
       // Reset form
@@ -591,6 +602,22 @@ export const ReceiptScanner: React.FC = () => {
                     <span className="font-medium">{submittedBy}</span>
                   </div>
                   <div className="flex justify-between">
+                    <span>Items subtotal:</span>
+                    <span>${itemsTotal.toFixed(2)}</span>
+                  </div>
+                  {tax > 0 && (
+                    <div className="flex justify-between">
+                      <span>Tax:</span>
+                      <span>${tax.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {tip > 0 && (
+                    <div className="flex justify-between">
+                      <span>Tip:</span>
+                      <span>${tip.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between border-t pt-1">
                     <span>Total amount:</span>
                     <span className="font-medium">${totalWithTaxTip.toFixed(2)}</span>
                   </div>

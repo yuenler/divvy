@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Receipt, CreditCard, Eye, EyeOff } from 'lucide-react';
 import { Expense, Payment } from '../types';
-import { getExpenses, getPayments, deletePayment, deleteExpense } from '../firebase/services';
+import { getExpenses, getPayments, deletePayment } from '../firebase/services';
 
 export const History: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -19,19 +19,6 @@ export const History: React.FC = () => {
       } catch (error) {
         console.error('Error deleting payment:', error);
         alert('Failed to delete payment. Please try again.');
-      }
-    }
-  };
-
-  const handleDeleteExpense = async (expenseId: string) => {
-    if (window.confirm('Are you sure you want to delete this receipt? This will remove it from the balance calculation.')) {
-      try {
-        await deleteExpense(expenseId);
-        await loadData();
-        alert('Receipt deleted successfully!');
-      } catch (error) {
-        console.error('Error deleting receipt:', error);
-        alert('Failed to delete receipt. Please try again.');
       }
     }
   };
@@ -153,27 +140,19 @@ export const History: React.FC = () => {
                           {activity.items.length} items
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-right">
-                          <p className="font-semibold text-gray-900">
-                            ${activity.totalAmount.toFixed(2)}
-                          </p>
-                          <button
-                            onClick={() => {
-                              setSelectedExpense(activity);
-                              setShowExpenseDetails(true);
-                            }}
-                            className="text-xs text-primary-600 hover:text-primary-700 flex items-center"
-                          >
-                            <Eye className="w-3 h-3 mr-1" />
-                            View Items
-                          </button>
-                        </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-gray-900">
+                          ${activity.totalAmount.toFixed(2)}
+                        </p>
                         <button
-                          onClick={() => handleDeleteExpense(activity.id)}
-                          className="text-xs text-red-600 hover:text-red-700 px-2 py-1 border border-red-200 rounded hover:bg-red-50"
+                          onClick={() => {
+                            setSelectedExpense(activity);
+                            setShowExpenseDetails(true);
+                          }}
+                          className="text-xs text-primary-600 hover:text-primary-700 flex items-center"
                         >
-                          Delete
+                          <Eye className="w-3 h-3 mr-1" />
+                          View Items
                         </button>
                       </div>
                     </div>
@@ -258,6 +237,22 @@ export const History: React.FC = () => {
                     <div>
                       <span className="text-gray-600">Items:</span>
                       <p className="font-medium">{selectedExpense.items.length}</p>
+                    </div>
+                    {(selectedExpense.tax || 0) > 0 && (
+                      <div>
+                        <span className="text-gray-600">Tax:</span>
+                        <p className="font-medium">${(selectedExpense.tax || 0).toFixed(2)}</p>
+                      </div>
+                    )}
+                    {(selectedExpense.tip || 0) > 0 && (
+                      <div>
+                        <span className="text-gray-600">Tip:</span>
+                        <p className="font-medium">${(selectedExpense.tip || 0).toFixed(2)}</p>
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-gray-600">Other person owes:</span>
+                      <p className="font-medium">${selectedExpense.otherPersonOwes.toFixed(2)}</p>
                     </div>
                   </div>
                 </div>

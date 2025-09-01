@@ -14,6 +14,9 @@ export interface Expense {
   customNotes: string;
   submittedBy: 'Yuen Ler' | 'Haoming';
   store?: string; // e.g., Costco, Trader Joe's
+  tax?: number;
+  tip?: number;
+  otherPersonOwes: number; // how much the other person owes for this expense (items + proportional tax/tip)
 }
 
 export interface Payment {
