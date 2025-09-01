@@ -330,7 +330,14 @@ export const ReceiptScanner: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setAnalysis(null);
-                  setItems([{ rawName: '', displayName: '', price: 0, assignedTo: 'Split' }]);
+                  setItems([{ 
+                    rawName: 'Manual Entry', 
+                    displayName: '', 
+                    price: 0, 
+                    assignedTo: 'Split' 
+                  }]);
+                  setStore('');
+                  setCustomNotes('');
                   setStep('split');
                 }}
                 className="w-full mt-2 bg-gray-100 text-gray-800 py-3 px-4 rounded-lg font-medium hover:bg-gray-200"
@@ -341,7 +348,7 @@ export const ReceiptScanner: React.FC = () => {
           </div>
         )}
 
-        {step === 'split' && analysis && (
+        {step === 'split' && (
           <div className="space-y-6">
             <div className="text-center">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">
