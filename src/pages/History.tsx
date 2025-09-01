@@ -227,7 +227,8 @@ export const History: React.FC = () => {
                     {selectedExpense.items.map((item, index) => (
                       <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <div>
-                          <p className="font-medium text-gray-900">{item.name}</p>
+                          <p className="font-medium text-gray-900">{item.displayName}</p>
+                          <p className="text-xs text-gray-500">Raw: {item.rawName}</p>
                           <p className="text-sm text-gray-600">
                             Assigned to: {item.assignedTo}
                           </p>
