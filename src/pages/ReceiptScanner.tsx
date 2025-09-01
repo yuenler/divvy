@@ -67,7 +67,7 @@ export const ReceiptScanner: React.FC = () => {
             }
           },
           'image/jpeg',
-          0.8 // 80% quality
+          0.95 // 95% quality
         );
       };
       
