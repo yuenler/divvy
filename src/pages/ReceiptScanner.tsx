@@ -191,8 +191,6 @@ export const ReceiptScanner: React.FC = () => {
   };
 
   const submitExpense = async () => {
-    if (!analysis) return;
-
     setLoading(true);
     try {
       const itemsTotal = items.reduce((sum, it) => sum + (Number(it.price) || 0), 0);

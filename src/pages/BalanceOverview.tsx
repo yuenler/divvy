@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, CreditCard, Smartphone, CheckCircle } from 'lucide-react';
+import { DollarSign, CreditCard, Smartphone } from 'lucide-react';
 import { Expense, Payment, Balance } from '../types';
 import { getExpenses, getPayments, addPayment } from '../firebase/services';
 import { calculateBalance as calcUtil } from '../utils/balanceCalculator';
@@ -96,6 +96,31 @@ export const BalanceOverview: React.FC = () => {
     } catch (error) {
       console.error('Error recording payment:', error);
       alert('Failed to record payment. Please try again.');
+    }
+  };
+
+  const handleManualReset = async () => {
+    if (window.confirm('This will create a fake payment to settle up all balances. Are you sure?')) {
+      try {
+        const amount = Math.abs(netBalance);
+        const from = netBalance > 0 ? 'Haoming' : 'Yuen Ler';
+        const to = netBalance > 0 ? 'Yuen Ler' : 'Haoming';
+        
+        await addPayment({
+          timestamp: new Date(),
+          amount,
+          from,
+          to,
+          method: 'manual',
+          relatedExpenses: expenses.map(e => e.id)
+        });
+        
+        await loadData();
+        alert('Balance manually reset to zero!');
+      } catch (error) {
+        console.error('Error resetting balance:', error);
+        alert('Failed to reset balance. Please try again.');
+      }
     }
   };
 
@@ -245,6 +270,21 @@ export const BalanceOverview: React.FC = () => {
               )}
             </div>
           </div>
+
+          {/* Manual Reset Button */}
+          {!isBalanced && (
+            <div className="border-t pt-4">
+              <button
+                onClick={handleManualReset}
+                className="w-full bg-yellow-50 text-yellow-800 py-3 px-4 rounded-lg font-medium hover:bg-yellow-100 border border-yellow-200"
+              >
+                🎯 Manually Reset Balance to Zero
+              </button>
+              <p className="text-xs text-yellow-600 mt-2 text-center">
+                Creates a fake payment to settle up all balances
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

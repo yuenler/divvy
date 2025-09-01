@@ -47,6 +47,10 @@ export const deleteExpense = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, 'expenses', id));
 };
 
+export const deletePayment = async (id: string): Promise<void> => {
+  await deleteDoc(doc(db, 'payments', id));
+};
+
 // Payment operations
 export const addPayment = async (payment: Omit<Payment, 'id'>): Promise<string> => {
   const docRef = await addDoc(collection(db, 'payments'), {
