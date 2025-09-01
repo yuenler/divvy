@@ -38,6 +38,9 @@ Rules:
 - Use payerName: items default to "Split" meaning the other person owes half to the payer; if the notes indicate an item was only for the payer, set suggestedAssignee to the payer; if only for the roommate, set suggestedAssignee to the other person. The notes are written by the payer.
 - Detect the store name from the receipt (e.g., Costco, Trader Joe's)`;
 
+// print the image
+console.log('image', base64Image);
+
     const response = await openai.responses.create({
       model: 'gpt-4.1',
       input: [
