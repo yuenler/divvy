@@ -160,30 +160,6 @@ export const ReceiptScanner: React.FC = () => {
     setItems(updatedItems);
   };
 
-  const calculateProportionalTaxAndTip = () => {
-    const itemsTotal = items.reduce((sum, item) => sum + item.price, 0);
-    if (itemsTotal === 0) return { yuenLerTaxTip: 0, haomingTaxTip: 0 };
-    
-    const other = submittedBy === 'Yuen Ler' ? 'Haoming' : 'Yuen Ler';
-    let otherItemTotal = 0;
-    
-    items.forEach(item => {
-      if (item.assignedTo === 'Split') {
-        otherItemTotal += item.price / 2;
-      } else if (item.assignedTo === other) {
-        otherItemTotal += item.price;
-      }
-    });
-    
-    const otherProportion = otherItemTotal / itemsTotal;
-    const totalTaxTip = tax + tip;
-    
-    return {
-      yuenLerTaxTip: other === 'Yuen Ler' ? totalTaxTip * otherProportion : totalTaxTip * (1 - otherProportion),
-      haomingTaxTip: other === 'Haoming' ? totalTaxTip * otherProportion : totalTaxTip * (1 - otherProportion),
-    };
-  };
-
   const calculateBalances = () => {
     const other = submittedBy === 'Yuen Ler' ? 'Haoming' : 'Yuen Ler';
     let otherOwes = 0;
@@ -195,11 +171,17 @@ export const ReceiptScanner: React.FC = () => {
       }
     });
     
-    const taxTipSplit = calculateProportionalTaxAndTip();
+    // Calculate proportional tax and tip for the other person
+    const itemsTotal = items.reduce((sum, item) => sum + item.price, 0);
+    let otherTaxTip = 0;
+    if (itemsTotal > 0) {
+      const otherProportion = otherOwes / itemsTotal;
+      otherTaxTip = (tax + tip) * otherProportion;
+    }
     
     return {
-      yuenLerTotal: (other === 'Yuen Ler' ? otherOwes : 0) + taxTipSplit.yuenLerTaxTip,
-      haomingTotal: (other === 'Haoming' ? otherOwes : 0) + taxTipSplit.haomingTaxTip,
+      yuenLerTotal: other === 'Yuen Ler' ? otherOwes + otherTaxTip : 0,
+      haomingTotal: other === 'Haoming' ? otherOwes + otherTaxTip : 0,
     };
   };
 
