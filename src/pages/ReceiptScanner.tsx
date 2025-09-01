@@ -56,6 +56,7 @@ export const ReceiptScanner: React.FC = () => {
       });
 
       if (!response.ok) {
+        console.log(response);
         throw new Error('Failed to analyze receipt');
       }
 
