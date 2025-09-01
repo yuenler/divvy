@@ -374,11 +374,12 @@ export const ReceiptScanner: React.FC = () => {
 
               {items.map((item, index) => (
                 <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 mb-2">
                     <input
                       value={item.displayName}
                       onChange={(e) => updateItemName(index, e.target.value)}
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      placeholder="Item name"
                     />
                     <input
                       type="number"
@@ -387,11 +388,14 @@ export const ReceiptScanner: React.FC = () => {
                       value={String(item.price)}
                       onChange={(e) => updateItemPrice(index, e.target.value)}
                       className="w-24 px-2 py-2 border border-gray-300 rounded-md text-sm text-right"
+                      placeholder="0.00"
                     />
+                  </div>
+                  <div className="flex items-center gap-3">
                     <select
                       value={item.assignedTo}
                       onChange={(e) => updateItemAssignment(index, e.target.value as 'Yuen Ler' | 'Haoming' | 'Split')}
-                      className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
                       <option value="Yuen Ler">Yuen Ler</option>
                       <option value="Haoming">Haoming</option>
@@ -400,12 +404,12 @@ export const ReceiptScanner: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => removeItem(index)}
-                      className="text-xs text-red-600 hover:text-red-700"
+                      className="px-3 py-2 text-xs text-red-600 hover:text-red-700 border border-red-200 rounded hover:bg-red-50"
                     >
                       Remove
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1 whitespace-pre-wrap break-words">Raw: {item.rawName}</p>
+                  <p className="text-xs text-gray-500 mt-2 whitespace-pre-wrap break-words">Raw: {item.rawName}</p>
                 </div>
               ))}
 

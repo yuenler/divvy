@@ -9,9 +9,16 @@ export const BalanceOverview: React.FC = () => {
   const [, setPayments] = useState<Payment[]>([]);
   const [balance, setBalance] = useState<Balance>({ yuenLerOwes: 0, haomingOwes: 0 });
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<'Yuen Ler' | 'Haoming'>('Yuen Ler');
 
   useEffect(() => {
     loadData();
+    
+    // Get current user from localStorage
+    const savedSubmitter = localStorage.getItem('expenseSubmitter');
+    if (savedSubmitter === 'Yuen Ler' || savedSubmitter === 'Haoming') {
+      setCurrentUser(savedSubmitter);
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadData = async () => {
@@ -67,9 +74,21 @@ export const BalanceOverview: React.FC = () => {
       await loadData();
       
       if (method === 'venmo') {
-        const venmoUsername = to === 'Yuen Ler' ? 'yuenler' : 'haoming';
+        const otherUser = currentUser === 'Yuen Ler' ? 'Haoming' : 'Yuen Ler';
+        const venmoUsername = otherUser === 'Yuen Ler' ? 'yuenler' : 'h4016506';
         const note = encodeURIComponent(getDateSpanNote());
-        const venmoUrl = `venmo://paycharge?txn=charge&recipients=${venmoUsername}&amount=${amount}&note=${note}`;
+        
+        // Determine transaction type based on who owes whom
+        let txnType: 'charge' | 'pay';
+        if (currentUser === 'Yuen Ler') {
+          // If current user is Yuen Ler: charge when owed, pay when owing
+          txnType = netBalance > 0 ? 'charge' : 'pay';
+        } else {
+          // If current user is Haoming: charge when owed, pay when owing
+          txnType = netBalance < 0 ? 'charge' : 'pay';
+        }
+        
+        const venmoUrl = `venmo://paycharge?txn=${txnType}&recipients=${venmoUsername}&amount=${amount}&note=${note}`;
         window.open(venmoUrl, '_blank');
       }
       
@@ -119,9 +138,9 @@ export const BalanceOverview: React.FC = () => {
             
             {!isBalanced && (
               <p className="text-sm text-gray-600 mt-2">
-                {netBalance > 0 
-                  ? 'Haoming owes Yuen Ler' 
-                  : 'Yuen Ler owes Haoming'
+                {currentUser === 'Yuen Ler' 
+                  ? (netBalance > 0 ? 'Haoming owes you' : 'You owe Haoming')
+                  : (netBalance < 0 ? 'Yuen Ler owes you' : 'You owe Yuen Ler')
                 }
               </p>
             )}
@@ -160,7 +179,18 @@ export const BalanceOverview: React.FC = () => {
                   className="w-full flex items-center justify-center p-4 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
                 >
                   <Smartphone className="w-5 h-5 text-green-600 mr-2" />
-                  <span className="text-sm font-medium text-green-800">Pay with Venmo</span>
+                  <span className="text-sm font-medium text-green-800">
+                    {currentUser === 'Yuen Ler' 
+                      ? (netBalance > 0 
+                          ? `Request $${Math.abs(netBalance).toFixed(2)} from Haoming on Venmo`
+                          : `Pay $${Math.abs(netBalance).toFixed(2)} to Haoming on Venmo`
+                        )
+                      : (netBalance < 0 
+                          ? `Request $${Math.abs(netBalance).toFixed(2)} from Yuen Ler on Venmo`
+                          : `Pay $${Math.abs(netBalance).toFixed(2)} to Yuen Ler on Venmo`
+                        )
+                    }
+                  </span>
                 </button>
                 
                 <button
@@ -171,7 +201,18 @@ export const BalanceOverview: React.FC = () => {
                   className="w-full flex items-center justify-center p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
                 >
                   <CreditCard className="w-5 h-5 text-blue-600 mr-2" />
-                  <span className="text-sm font-medium text-blue-800">Settle Manually with Zelle</span>
+                  <span className="text-sm font-medium text-blue-800">
+                    {currentUser === 'Yuen Ler' 
+                      ? (netBalance > 0 
+                          ? `Mark $${Math.abs(netBalance).toFixed(2)} received from Haoming (Zelle)`
+                          : `Mark $${Math.abs(netBalance).toFixed(2)} paid to Haoming (Zelle)`
+                        )
+                      : (netBalance < 0 
+                          ? `Mark $${Math.abs(netBalance).toFixed(2)} received from Yuen Ler (Zelle)`
+                          : `Mark $${Math.abs(netBalance).toFixed(2)} paid to Yuen Ler (Zelle)`
+                        )
+                    }
+                  </span>
                 </button>
               </div>
             </div>
