@@ -158,7 +158,7 @@ export const BalanceOverview: React.FC = () => {
                   : 'bg-orange-100 text-orange-800'
             }`}>
               <DollarSign className="w-5 h-5 mr-2" />
-              {isBalanced ? 'All Balanced!' : `$${Math.abs(netBalance).toFixed(2)}`}
+              {isBalanced ? 'All Balanced!' : `${Math.abs(netBalance).toFixed(2)}`}
             </div>
             
             {!isBalanced && (
