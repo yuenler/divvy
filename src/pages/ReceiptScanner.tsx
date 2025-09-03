@@ -21,6 +21,45 @@ export const ReceiptScanner: React.FC = () => {
     if (savedSubmitter === 'Yuen Ler' || savedSubmitter === 'Haoming') {
       setSubmittedBy(savedSubmitter);
     }
+
+    // Add paste event listener for images
+    const handlePaste = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            try {
+              const compressedFile = await compressImage(file);
+              setSelectedFile(compressedFile);
+              
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                setImagePreview(e.target?.result as string);
+              };
+              reader.readAsDataURL(compressedFile);
+            } catch (error) {
+              console.error('Error processing pasted image:', error);
+              // Fallback to original file
+              setSelectedFile(file);
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                setImagePreview(e.target?.result as string);
+              };
+              reader.readAsDataURL(file);
+            }
+          }
+          break;
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
   }, []);
 
   const handleSubmitterChange = (value: 'Yuen Ler' | 'Haoming') => {
@@ -269,7 +308,7 @@ export const ReceiptScanner: React.FC = () => {
                 Upload Receipt Photo
               </h2>
               <p className="text-gray-600 text-sm">
-                Take a clear photo of your receipt
+                Take a clear photo of your receipt or paste an image from your clipboard
               </p>
             </div>
 
@@ -302,7 +341,7 @@ export const ReceiptScanner: React.FC = () => {
                 >
                   <Upload className="w-5 h-5 text-gray-400 mr-2" />
                   <span className="text-sm text-gray-600">
-                    {selectedFile ? 'Change Photo' : 'Choose Photo'}
+                    {selectedFile ? 'Change Photo' : 'Choose Photo or Paste Image (Ctrl+V/Cmd+V)'}
                   </span>
                 </label>
               </div>
