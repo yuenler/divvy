@@ -9,6 +9,7 @@ export const History: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [showExpenseDetails, setShowExpenseDetails] = useState(false);
+  const [currentUser, setCurrentUser] = useState<'Yuen Ler' | 'Haoming'>('Yuen Ler');
 
   const handleDeletePayment = async (paymentId: string) => {
     if (window.confirm('Are you sure you want to delete this payment? This will restore the balance.')) {
@@ -24,6 +25,12 @@ export const History: React.FC = () => {
   };
 
   useEffect(() => {
+    // Get current user from localStorage
+    const savedSubmitter = localStorage.getItem('expenseSubmitter');
+    if (savedSubmitter === 'Yuen Ler' || savedSubmitter === 'Haoming') {
+      setCurrentUser(savedSubmitter);
+    }
+    
     loadData();
   }, []);
 
@@ -77,6 +84,16 @@ export const History: React.FC = () => {
       default:
         return method;
     }
+  };
+
+  const getUserOwesAmount = (expense: Expense): number => {
+    // If current user submitted the expense, they don't owe anything (they paid)
+    if (expense.submittedBy === currentUser) {
+      return 0;
+    }
+    
+    // If the other person submitted it, current user owes the otherPersonOwes amount
+    return expense.otherPersonOwes;
   };
 
   if (loading) {
@@ -139,6 +156,11 @@ export const History: React.FC = () => {
                         <p className="text-sm text-gray-500">
                           {activity.items.length} items
                         </p>
+                        {getUserOwesAmount(activity) > 0 && (
+                          <p className="text-sm font-medium text-orange-600">
+                            You owe ${getUserOwesAmount(activity).toFixed(2)}
+                          </p>
+                        )}
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-gray-900">
