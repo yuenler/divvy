@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Receipt, CreditCard, Eye, EyeOff } from 'lucide-react';
 import { Expense, Payment } from '../types';
-import { getExpenses, getPayments, deletePayment } from '../firebase/services';
+import { getExpenses, getPayments, deletePayment, deleteExpense } from '../firebase/services';
 
 export const History: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -20,6 +20,19 @@ export const History: React.FC = () => {
       } catch (error) {
         console.error('Error deleting payment:', error);
         alert('Failed to delete payment. Please try again.');
+      }
+    }
+  };
+
+  const handleDeleteExpense = async (expenseId: string) => {
+    if (window.confirm('Are you sure you want to delete this expense? This action cannot be undone.')) {
+      try {
+        await deleteExpense(expenseId);
+        await loadData();
+        alert('Expense deleted successfully!');
+      } catch (error) {
+        console.error('Error deleting expense:', error);
+        alert('Failed to delete expense. Please try again.');
       }
     }
   };
@@ -162,19 +175,27 @@ export const History: React.FC = () => {
                           </p>
                         )}
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-gray-900">
-                          ${activity.totalAmount.toFixed(2)}
-                        </p>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <p className="font-semibold text-gray-900">
+                            ${activity.totalAmount.toFixed(2)}
+                          </p>
+                          <button
+                            onClick={() => {
+                              setSelectedExpense(activity);
+                              setShowExpenseDetails(true);
+                            }}
+                            className="text-xs text-primary-600 hover:text-primary-700 flex items-center"
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            View Items
+                          </button>
+                        </div>
                         <button
-                          onClick={() => {
-                            setSelectedExpense(activity);
-                            setShowExpenseDetails(true);
-                          }}
-                          className="text-xs text-primary-600 hover:text-primary-700 flex items-center"
+                          onClick={() => handleDeleteExpense(activity.id)}
+                          className="text-xs text-red-600 hover:text-red-700 px-2 py-1 border border-red-200 rounded hover:bg-red-50"
                         >
-                          <Eye className="w-3 h-3 mr-1" />
-                          View Items
+                          Delete
                         </button>
                       </div>
                     </div>
